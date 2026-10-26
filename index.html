@@ -1,0 +1,953 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>疑似国家队 ETF 9 秒放量监控</title>
+<style>
+:root{--bg:#0b0f14;--panel:#121821;--line:#243040;--line2:#1a2431;--text:#e6edf5;--muted:#8b9bb0;--green:#32d583;--yellow:#f5c542;--orange:#ff9f43;--red:#ff5c5c;--purple:#b388ff;--blue:#5aa9ff;--shadow:0 12px 40px rgba(0,0,0,.35);--radius:14px}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{background:radial-gradient(900px 420px at 15% -10%,rgba(90,169,255,.12),transparent 60%),radial-gradient(700px 400px at 90% 0%,rgba(179,136,255,.08),transparent 55%),var(--bg);color:var(--text);font:14px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Microsoft YaHei",sans-serif;min-height:100vh}
+button,input{font:inherit}button{cursor:pointer}.hidden{display:none!important}
+.topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 22px;background:rgba(11,15,20,.86);backdrop-filter:blur(14px);border-bottom:1px solid var(--line2)}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.logo{width:40px;height:40px;border-radius:12px;flex:0 0 auto;background:linear-gradient(135deg,#1a73e8,#7c4dff);box-shadow:0 0 0 1px rgba(255,255,255,.08),0 8px 24px rgba(26,115,232,.25);display:grid;place-items:center;font-weight:800;font-size:13px;letter-spacing:.5px}
+.brand h1{margin:0;font-size:17px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand p{margin:3px 0 0;color:var(--muted);font-size:12px}
+.top-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.clock{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px;min-width:66px;text-align:right}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:rgba(255,255,255,.03);font-size:12px;white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.85}
+.pill.ok{color:var(--green);border-color:rgba(50,213,131,.28);background:rgba(50,213,131,.08)}
+.pill.warn{color:var(--yellow);border-color:rgba(245,197,66,.28);background:rgba(245,197,66,.08)}
+.pill.error{color:var(--red);border-color:rgba(255,92,92,.30);background:rgba(255,92,92,.09)}
+.pill.demo{color:var(--purple);border-color:rgba(179,136,255,.30);background:rgba(179,136,255,.09)}
+.pill.muted{color:var(--muted)}
+.btn{border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);padding:7px 12px;border-radius:9px;font-size:13px;white-space:nowrap;transition:background .15s,border-color .15s,transform .1s}
+.btn:hover{background:rgba(255,255,255,.08);border-color:#35465c}.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(135deg,#1f6feb,#6d4aff);border-color:transparent;font-weight:650}.btn.primary:hover{filter:brightness(1.08)}
+.btn.danger{background:rgba(255,92,92,.14);border-color:rgba(255,92,92,.35);color:#ffb4b4}
+.btn.ghost{background:transparent}.btn.small{padding:5px 9px;font-size:12px;border-radius:7px}
+.wrap{max-width:1500px;margin:0 auto;padding:18px 22px 40px}
+.banner{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin:18px auto 0;max-width:1500px;padding:14px 18px;border-radius:12px;border:1px solid var(--line);background:var(--panel);box-shadow:var(--shadow)}
+.banner.watch{border-color:rgba(245,197,66,.45);background:linear-gradient(90deg,rgba(245,197,66,.14),rgba(18,24,33,.96))}
+.banner.alert{border-color:rgba(255,159,67,.50);background:linear-gradient(90deg,rgba(255,159,67,.16),rgba(18,24,33,.96))}
+.banner.critical{border-color:rgba(255,92,92,.55);background:linear-gradient(90deg,rgba(255,92,92,.18),rgba(18,24,33,.96))}
+.banner.event{border-color:rgba(179,136,255,.55);background:linear-gradient(90deg,rgba(179,136,255,.18),rgba(18,24,33,.96))}
+.banner-main{display:flex;align-items:flex-start;gap:12px;min-width:0}
+.banner-main strong{display:block;font-size:14px}.banner-main p{margin:4px 0 0;color:#c8d3e1;font-size:13px;overflow-wrap:anywhere}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:54px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:750;letter-spacing:.4px;background:rgba(255,255,255,.08);color:var(--text)}
+.badge.watch{color:#1d1600;background:var(--yellow)}.badge.alert{color:#241100;background:var(--orange)}.badge.critical{color:#2b0000;background:var(--red)}.badge.event{color:#1a0033;background:var(--purple)}
+.icon-btn{border:0;background:transparent;color:var(--muted);font-size:24px;line-height:1;padding:0 2px;align-self:flex-start}.icon-btn:hover{color:var(--text)}
+.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0 14px}
+.stat{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.015));border:1px solid var(--line2);border-radius:var(--radius);padding:14px 16px}
+.stat label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}.stat strong{display:block;font-size:24px;line-height:1.2;font-variant-numeric:tabular-nums}.stat span{display:block;margin-top:5px;color:#6f8197;font-size:11px}
+.panel{background:linear-gradient(180deg,rgba(255,255,255,.026),rgba(255,255,255,.012));border:1px solid var(--line2);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.table-panel{margin-bottom:14px}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line2)}
+.panel-head h2{margin:0;font-size:13px;letter-spacing:.3px;color:#cbd6e4}.panel-head span{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:1120px}
+th,td{padding:9px 10px;text-align:left;border-bottom:1px solid rgba(36,48,64,.55);white-space:nowrap}
+th{position:sticky;top:0;z-index:2;background:#141b24;color:#8596ab;font-size:11px;font-weight:600;letter-spacing:.3px}
+tbody tr{cursor:pointer;transition:background .12s}tbody tr:hover{background:rgba(90,169,255,.06)}tbody tr.selected{background:rgba(90,169,255,.10)}tbody tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}td.symbol{font-weight:700}td.name{color:#cbd6e4}td.dim{color:#6f8197}td.pos{color:var(--green)}td.neg{color:var(--red)}
+.status{display:inline-flex;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:750;letter-spacing:.25px}
+.status.calibrating{color:#9eacbd;background:rgba(158,172,189,.10)}.status.normal{color:var(--green);background:rgba(50,213,131,.10)}
+.status.watch{color:#1d1600;background:var(--yellow)}.status.alert{color:#241100;background:var(--orange)}.status.critical{color:#2b0000;background:var(--red);animation:pulse 1.15s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,92,92,.35)}50%{box-shadow:0 0 0 6px rgba(255,92,92,0)}}
+tr.status-watch td:first-child{box-shadow:inset 3px 0 0 var(--yellow)}tr.status-alert td:first-child{box-shadow:inset 3px 0 0 var(--orange)}tr.status-critical td:first-child{box-shadow:inset 3px 0 0 var(--red)}
+.chart-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,.95fr);gap:14px;margin-bottom:14px}
+.chart-wrap{padding:0 16px 14px}canvas{display:block;width:100%;height:220px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;padding:0 16px 14px;color:var(--muted);font-size:11px}.legend i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.legend .bar{background:var(--orange)}.legend .base{background:var(--blue)}.legend .floor{background:var(--red)}
+.log{max-height:280px;overflow:auto;padding:4px 0}
+.log-item{display:grid;grid-template-columns:60px 58px 54px minmax(0,1fr);gap:8px;align-items:start;padding:8px 16px;border-bottom:1px solid rgba(36,48,64,.40);font-size:12px}
+.log-item.clickable{cursor:pointer}.log-item.clickable:hover{background:rgba(90,169,255,.06)}
+.log-item:last-child{border-bottom:0}.log-time{color:#6f8197;font-variant-numeric:tabular-nums}.log-symbol{color:#9fb0c4;font-variant-numeric:tabular-nums}.log-text{color:#b9c6d6;overflow-wrap:anywhere}
+.empty{padding:22px 16px;color:#6f8197;font-size:12px}
+footer{max-width:1500px;margin:16px auto 0;padding:0 22px;color:#65758a;font-size:11px;line-height:1.7}
+.modal{position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:rgba(0,0,0,.62);backdrop-filter:blur(6px);padding:20px}
+.modal-card{width:min(560px,100%);background:#101720;border:1px solid #2a394d;border-radius:16px;box-shadow:0 30px 100px rgba(0,0,0,.55);overflow:hidden}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line2)}.modal-head h2{margin:0;font-size:15px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:18px}.form-grid label{display:grid;gap:7px;color:#aab9cb;font-size:12px}
+.form-grid input[type="number"]{width:100%;padding:9px 10px;border-radius:8px;border:1px solid #2a394d;background:#0b1118;color:var(--text);outline:none}
+.form-grid input[type="number"]:focus{border-color:#4d7fca;box-shadow:0 0 0 3px rgba(90,169,255,.12)}
+.form-grid .check{display:flex;align-items:center;gap:9px;color:#aab9cb}.form-grid input[type="checkbox"]{width:16px;height:16px;accent-color:#4f8cff}
+.modal-actions{display:flex;justify-content:space-between;gap:10px;padding:14px 18px 18px;border-top:1px solid var(--line2)}
+.hint{grid-column:1/-1;color:#65758a;font-size:11px;line-height:1.6}
+@media(max-width:980px){.topbar{align-items:flex-start;flex-direction:column}.top-right{justify-content:flex-start}.summary{grid-template-columns:repeat(2,minmax(0,1fr))}.chart-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.wrap{padding:12px}.topbar{padding:12px}.brand h1{font-size:15px;white-space:normal}.summary{gap:8px}.stat{padding:12px}.stat strong{font-size:20px}.form-grid{grid-template-columns:1fr}.log-item{grid-template-columns:54px 52px 48px minmax(0,1fr);gap:6px}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">ETF</div>
+    <div>
+      <h1>疑似国家队 ETF 9 秒放量监控</h1>
+      <p>腾讯快照 · 今日最近 5 分钟 · 单文件 MVP</p>
+    </div>
+  </div>
+  <div class="top-right">
+    <span id="sourceStatus" class="pill muted">等待启动</span>
+    <span id="clock" class="clock">--:--:--</span>
+    <button id="startBtn" class="btn primary" type="button">开始</button>
+    <button id="demoBtn" class="btn" type="button">演示</button>
+    <button id="settingsBtn" class="btn ghost" type="button">设置</button>
+  </div>
+</header>
+
+<div id="banner" class="banner hidden" role="alert">
+  <div class="banner-main">
+    <span id="bannerLevel" class="badge">ALERT</span>
+    <div>
+      <strong id="bannerTitle"></strong>
+      <p id="bannerText"></p>
+    </div>
+  </div>
+  <button id="bannerClose" class="icon-btn" type="button" aria-label="关闭">×</button>
+</div>
+
+<main class="wrap">
+  <section class="summary">
+    <div class="stat"><label>9 秒总成交</label><strong id="statAmount">--</strong><span>12 只 ETF 合计</span></div>
+    <div class="stat"><label>触发标的</label><strong id="statTriggered">--</strong><span>达到同步阈值的数量</span></div>
+    <div class="stat"><label>同步分组</label><strong id="statGroups">--</strong><span>不同指数风格扩散</span></div>
+    <div class="stat"><label>最高 RVOL</label><strong id="statMaxRvol">--</strong><span>当前 9 秒窗口</span></div>
+  </section>
+
+  <section class="panel table-panel">
+    <div class="panel-head"><h2>监控列表</h2><span id="lastUpdate">等待数据</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>代码 / 名称</th><th>分组</th><th class="num">最新</th><th class="num">涨跌</th>
+            <th class="num">9s 成交</th><th class="num">RVOL 9s</th><th class="num">RVOL 15s</th>
+            <th class="num">RVOL 30s</th><th class="num">z</th><th class="num">同步</th>
+            <th class="num">评分</th><th>状态</th><th>最后告警</th>
+          </tr>
+        </thead>
+        <tbody id="etfRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="chart-grid">
+    <section class="panel">
+      <div class="panel-head"><h2 id="chartTitle">选中标的</h2><span id="chartMeta">最近 5 分钟</span></div>
+      <div class="chart-wrap"><canvas id="chart"></canvas></div>
+      <div class="legend">
+        <span><i class="bar"></i>9 秒滚动成交额</span>
+        <span><i class="base"></i>基线 expected9</span>
+        <span><i class="floor"></i>金额地板</span>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2>事件记录</h2><button id="clearLog" class="btn small ghost" type="button">清空</button></div>
+      <div id="eventLog" class="log"><div class="empty">暂无事件</div></div>
+    </section>
+  </div>
+
+  <footer>本页面仅使用腾讯公开行情做成交异常提示，不确认交易主体，不构成投资建议。数据与告警只保存在当前页面内存中，刷新即清空。</footer>
+</main>
+
+<div id="settingsModal" class="modal hidden">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-head"><h2 id="settingsTitle">检测设置</h2><button id="closeSettings" class="icon-btn" type="button" aria-label="关闭">×</button></div>
+    <div class="form-grid">
+      <label>WATCH RVOL<input id="setWatch" type="number" min="1" max="20" step="0.1"></label>
+      <label>ALERT RVOL<input id="setAlert" type="number" min="1" max="30" step="0.1"></label>
+      <label>CRITICAL RVOL<input id="setCritical" type="number" min="1" max="50" step="0.1"></label>
+      <label>同步 RVOL 阈值<input id="setSync" type="number" min="1" max="10" step="0.1"></label>
+      <label class="check"><input id="setSound" type="checkbox"> 告警声音</label>
+      <label class="check"><input id="setNotify" type="checkbox"> 浏览器通知</label>
+      <label class="check"><input id="setAutoStart" type="checkbox"> 打开页面自动开始</label>
+      <div class="hint">阈值只影响当前页面的判定，刷新后仍会保留。建议先保持默认值，观察一段时间再调。</div>
+    </div>
+    <div class="modal-actions">
+      <button id="resetSettings" class="btn" type="button">恢复默认</button>
+      <button id="saveSettings" class="btn primary" type="button">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ETF_CONFIG = [
+  { symbol: "510300", name: "沪深300ETF华泰柏瑞", exchange: "SH", group: "csi300", floor9: 20000000 },
+  { symbol: "510310", name: "沪深300ETF易方达", exchange: "SH", group: "csi300", floor9: 12000000 },
+  { symbol: "510330", name: "沪深300ETF华夏", exchange: "SH", group: "csi300", floor9: 8000000 },
+  { symbol: "159919", name: "沪深300ETF嘉实", exchange: "SZ", group: "csi300", floor9: 5000000 },
+  { symbol: "510050", name: "上证50ETF华夏", exchange: "SH", group: "sse50", floor9: 10000000 },
+  { symbol: "510500", name: "中证500ETF南方", exchange: "SH", group: "csi500", floor9: 6000000 },
+  { symbol: "512500", name: "中证500ETF华夏", exchange: "SH", group: "csi500", floor9: 3000000 },
+  { symbol: "512100", name: "中证1000ETF南方", exchange: "SH", group: "csi1000", floor9: 5000000 },
+  { symbol: "159845", name: "中证1000ETF华夏", exchange: "SZ", group: "csi1000", floor9: 3000000 },
+  { symbol: "159915", name: "创业板ETF易方达", exchange: "SZ", group: "chinext", floor9: 6000000 },
+  { symbol: "588000", name: "科创50ETF华夏", exchange: "SH", group: "star50", floor9: 6000000 },
+  { symbol: "588080", name: "科创50ETF易方达", exchange: "SH", group: "star50", floor9: 3000000 }
+];
+const ETF_BY_SYMBOL = new Map(ETF_CONFIG.map(c => [c.symbol, c]));
+const DEFAULT_SETTINGS = { rvolWatch: 3, rvolAlert: 6, rvolCritical: 8, syncRvol: 3, sound: true, notifications: false, autoStart: true };
+const STORAGE_KEY = "wwb.settings.v1";
+const DELTA_WINDOW_MS = 120000;
+const RANK = { CALIBRATING: 0, NORMAL: 0, WATCH: 1, ALERT: 2, CRITICAL: 3 };
+const STATUS_LABEL = { CALIBRATING: "校准中", NORMAL: "正常", WATCH: "观察", ALERT: "告警", CRITICAL: "严重" };
+const state = new Map();
+let settings = loadSettings();
+let running = false;
+let demo = false;
+let pollTimer = null;
+let bannerTimer = null;
+let sourceFails = 0;
+let lastSourceOkAt = 0;
+let lastLatency = 0;
+let lastDataTime = "";
+let selectedSymbol = "510300";
+let alertLog = [];
+let logSeq = 0;
+let globalEvent = null;
+let audioCtx = null;
+let audioUnlocked = false;
+let wakeLock = null;
+let demoStep = 0;
+
+function emptyMetrics() {
+  return { ready: false, med: 0, mad: 0, expected9: 0, actual9: 0, rvol9: 0, rvol15: 0, rvol30: 0, rvol60: 0, z9: 0, sameGroupActive: 0, styleGroupsActive: 0, score: 0 };
+}
+function resetEtf(s) {
+  s.last = null;
+  s.deltas = [];
+  s.sessionKey = "";
+  s.lastPhase = "";
+  s.anchorDone = false;
+  s.state = "CALIBRATING";
+  s.metrics = emptyMetrics();
+  s.lastAlertAt = 0;
+  s.lastAlertTime = "";
+  s.lastAlertLevel = "";
+  s.lastAlertText = "";
+}
+function initState() {
+  state.clear();
+  for (const cfg of ETF_CONFIG) {
+    state.set(cfg.symbol, { ...cfg, last: null, deltas: [], sessionKey: "", lastPhase: "", anchorDone: false, state: "CALIBRATING", metrics: emptyMetrics(), lastAlertAt: 0, lastAlertTime: "", lastAlertLevel: "", lastAlertText: "" });
+  }
+}
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS };
+  } catch { return { ...DEFAULT_SETTINGS }; }
+}
+function saveSettings() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch {}
+}
+function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+function toNum(v) { const n = Number(v); return Number.isFinite(n) ? n : NaN; }
+function median(values) {
+  if (!values.length) return 0;
+  const a = values.slice().sort((x, y) => x - y);
+  const m = a.length >> 1;
+  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+}
+function sum(values) { return values.reduce((a, b) => a + b, 0); }
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function formatMoney(v) {
+  if (!Number.isFinite(v)) return "--";
+  const n = Math.abs(v);
+  if (n >= 1e8) return (v / 1e8).toFixed(2) + "亿";
+  if (n >= 1e4) return (v / 1e4).toFixed(0) + "万";
+  return Math.round(v).toString();
+}
+function formatPct(v) { return Number.isFinite(v) ? (v > 0 ? "+" : "") + v.toFixed(2) + "%" : "--"; }
+function formatRvol(v) { return Number.isFinite(v) && v > 0 ? (v >= 99 ? "99+" : v.toFixed(1)) + "x" : "--"; }
+function formatZ(v) { if (!Number.isFinite(v)) return "--"; if (v >= 100) return "99+"; if (v <= -100) return "-99"; return v.toFixed(1); }
+function formatScore(v) { return Number.isFinite(v) ? v.toFixed(2) : "--"; }
+function shanghaiParts(date = new Date()) {
+  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" });
+  const p = Object.fromEntries(fmt.formatToParts(date).map(x => [x.type, x.value]));
+  return { dateKey: p.year + p.month + p.day, hhmmss: p.hour + p.minute + p.second, clock: p.hour + ":" + p.minute + ":" + p.second };
+}
+function formatTs(date) { const p = shanghaiParts(date); return p.dateKey + p.hhmmss; }
+function parseTs(raw) {
+  if (!/^\d{14}$/.test(raw)) return null;
+  const date = new Date(Date.UTC(+raw.slice(0, 4), +raw.slice(4, 6) - 1, +raw.slice(6, 8), +raw.slice(8, 10), +raw.slice(10, 12), +raw.slice(12, 14)));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+function timeOfTs(raw) { return /^\d{14}$/.test(raw) ? raw.slice(8, 10) + ":" + raw.slice(10, 12) + ":" + raw.slice(12, 14) : "--"; }
+function sessionPhase(t) {
+  if (t < "091500") return "pre";
+  if (t < "093000") return "auction";
+  if (t <= "113000") return "continuous";
+  if (t < "130000") return "lunch";
+  if (t <= "145700") return "continuous";
+  if (t <= "150000") return "auction";
+  return "closed";
+}
+function sessionKey(raw) { return raw.slice(0, 8) + ":" + (raw.slice(8) < "120000" ? "am" : "pm"); }
+function ticker(cfg) { return (cfg.exchange === "SH" ? "sh" : "sz") + cfg.symbol; }
+
+function decodeGbk(buf) {
+  try { return new TextDecoder("gbk").decode(buf); }
+  catch {
+    try { return new TextDecoder("gb18030").decode(buf); }
+    catch { return new TextDecoder("utf-8").decode(buf); }
+  }
+}
+function parseTencent(text) {
+  const out = [];
+  const re = /v_((?:sh|sz)\d{6})="([^"]*)"/g;
+  let m;
+  while ((m = re.exec(text))) {
+    const f = m[2].split("~");
+    if (f.length < 39) continue;
+    const symbol = f[2];
+    if (!ETF_BY_SYMBOL.has(symbol)) continue;
+    const tsRaw = f[30];
+    const ts = parseTs(tsRaw);
+    if (!ts) continue;
+    const cumAmtWan = toNum(f[37]);
+    if (!Number.isFinite(cumAmtWan)) continue;
+    const price = toNum(f[3]);
+    const prevClose = toNum(f[4]);
+    const pct = toNum(f[32]);
+    out.push({
+      symbol, ts, tsRaw, price,
+      prevClose: Number.isFinite(prevClose) ? prevClose : 0,
+      pct: Number.isFinite(pct) ? pct : 0,
+      cumVolLots: toNum(f[36]) || toNum(f[6]) || 0,
+      cumAmt: cumAmtWan * 10000
+    });
+  }
+  return out;
+}
+async function fetchSnapshots() {
+  const url = "https://qt.gtimg.cn/q=" + ETF_CONFIG.map(ticker).join(",") + "&_t=" + Date.now();
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 2500);
+  const t0 = performance.now();
+  try {
+    const res = await fetch(url, { cache: "no-store", signal: ctrl.signal });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const snaps = parseTencent(decodeGbk(await res.arrayBuffer()));
+    if (!snaps.length) throw new Error("空行情");
+    return { snaps, latency: performance.now() - t0 };
+  } finally { clearTimeout(timer); }
+}
+
+function ingest(snap, forceContinuous = false) {
+  const s = state.get(snap.symbol);
+  if (!s) return;
+  if (!forceContinuous && snap.tsRaw.slice(0, 8) !== shanghaiParts().dateKey) return;
+  const phase = forceContinuous ? "continuous" : sessionPhase(snap.tsRaw.slice(8));
+  const key = forceContinuous ? "demo" : sessionKey(snap.tsRaw);
+  if (s.sessionKey !== key || phase !== s.lastPhase) {
+    s.deltas = [];
+    s.anchorDone = false;
+    s.metrics = emptyMetrics();
+    s.state = "CALIBRATING";
+    s.sessionKey = key;
+  }
+  if (phase !== "continuous") {
+    s.last = snap;
+    s.lastPhase = phase;
+    s.anchorDone = false;
+    return;
+  }
+  if (!s.last || !s.anchorDone) {
+    s.last = snap;
+    s.lastPhase = phase;
+    s.anchorDone = true;
+    return;
+  }
+  if (snap.ts.getTime() <= s.last.ts.getTime()) return;
+  const dt = (snap.ts.getTime() - s.last.ts.getTime()) / 1000;
+  const dAmt = snap.cumAmt - s.last.cumAmt;
+  s.last = snap;
+  s.lastPhase = phase;
+  if (dt < 2 || dt > 12) return;
+  if (dAmt < 0) {
+    s.deltas = [];
+    s.metrics = emptyMetrics();
+    s.state = "CALIBRATING";
+    return;
+  }
+  s.deltas.push({ ts: snap.ts, dt, dAmt });
+  const cutoff = snap.ts.getTime() - DELTA_WINDOW_MS;
+  while (s.deltas.length && s.deltas[0].ts.getTime() < cutoff) s.deltas.shift();
+}
+
+function amountWindow(d, seconds) {
+  let sumAmt = 0, sumDt = 0, count = 0, start = d.length;
+  for (let i = d.length - 1; i >= 0 && sumDt < seconds; i--) {
+    sumAmt += d[i].dAmt;
+    sumDt += d[i].dt;
+    count++;
+    start = i;
+  }
+  return { sumAmt, sumDt, count, start };
+}
+function historyWindow(d, end, maxSeconds) {
+  let sumDt = 0, start = end;
+  for (let i = end - 1; i >= 0 && sumDt < maxSeconds; i--) {
+    sumDt += d[i].dt;
+    start = i;
+  }
+  return d.slice(start, end);
+}
+function amountAtWindow(w, seconds) {
+  return w.sumDt > 0 ? w.sumAmt * seconds / w.sumDt : 0;
+}
+function primaryWindow(d) {
+  const last = d[d.length - 1];
+  return amountWindow(d, last && last.dt >= 5.5 ? 6 : 9);
+}
+
+function computeSignals() {
+  for (const cfg of ETF_CONFIG) {
+    const s = state.get(cfg.symbol);
+    const d = s.deltas;
+    const w9 = primaryWindow(d);
+    const history = historyWindow(d, w9.start, 60);
+    const historyDt = sum(history.map(x => x.dt));
+    if (w9.sumDt < 5.5 || history.length < 8 || historyDt < 45) {
+      s.metrics = emptyMetrics();
+      s.state = "CALIBRATING";
+      continue;
+    }
+    const rates = history.map(x => x.dAmt / Math.max(x.dt, 1));
+    const medRate = median(rates);
+    const madRate = median(rates.map(r => Math.abs(r - medRate)));
+    const expected9 = medRate * 9;
+    const actual9 = amountAtWindow(w9, 9);
+    const actual15 = amountAtWindow(amountWindow(d, 15), 15);
+    const actual30 = amountAtWindow(amountWindow(d, 30), 30);
+    const actual60 = amountAtWindow(amountWindow(d, 60), 60);
+    const sigma9 = Math.max(1.4826 * madRate * 9 / Math.sqrt(Math.max(w9.count, 1)), 1);
+    s.metrics = {
+      ready: true, med: medRate * 3, mad: madRate * 3, expected9, actual9,
+      rvol9: actual9 / Math.max(expected9, 1),
+      rvol15: actual15 / Math.max(medRate * 15, 1),
+      rvol30: actual30 / Math.max(medRate * 30, 1),
+      rvol60: actual60 / Math.max(medRate * 60, 1),
+      z9: (actual9 - expected9) / sigma9,
+      sameGroupActive: 0, styleGroupsActive: 0, score: 0
+    };
+  }
+  const active = ETF_CONFIG.filter(cfg => {
+    const m = state.get(cfg.symbol).metrics;
+    return m.ready && m.actual9 >= cfg.floor9 && m.rvol9 >= settings.syncRvol;
+  });
+  const groupsActive = new Set(active.map(c => c.group)).size;
+  for (const cfg of ETF_CONFIG) {
+    const s = state.get(cfg.symbol);
+    const m = s.metrics;
+    if (!m.ready) continue;
+    const same = active.filter(c => c.group === cfg.group).length;
+    const strength = clamp((m.rvol9 - 3) / 12, 0, 1);
+    const sync = clamp((same - 1) / 2, 0, 1);
+    const breadth = clamp((groupsActive - 1) / 2, 0, 1);
+    const tail = s.last && s.last.tsRaw.slice(8) >= "143000" ? 1 : 0.2;
+    m.sameGroupActive = same;
+    m.styleGroupsActive = groupsActive;
+    m.score = 0.50 * strength + 0.30 * sync + 0.15 * breadth + 0.05 * tail;
+  }
+}
+
+function levelFor(cfg, s) {
+  const m = s.metrics;
+  if (!m.ready) return "CALIBRATING";
+  const hasFloor = m.actual9 >= cfg.floor9;
+  if (hasFloor && m.rvol9 >= settings.rvolCritical && m.score >= 0.70 && m.sameGroupActive >= 2 && m.styleGroupsActive >= 2) return "CRITICAL";
+  if (hasFloor && m.rvol9 >= settings.rvolAlert && (m.sameGroupActive >= 2 || m.rvol9 >= 10 || m.rvol15 >= 5)) return "ALERT";
+  if (hasFloor && m.rvol9 >= settings.rvolWatch && m.z9 >= 2) return "WATCH";
+  return "NORMAL";
+}
+function cooldown(level) { return level === "CRITICAL" ? 120000 : level === "ALERT" ? 60000 : 30000; }
+
+function evaluateAlerts() {
+  const now = Date.now();
+  for (const cfg of ETF_CONFIG) {
+    const s = state.get(cfg.symbol);
+    const next = levelFor(cfg, s);
+    const prev = s.state;
+    s.state = next;
+    if (next === prev) {
+      if ((next === "ALERT" || next === "CRITICAL") && now - s.lastAlertAt >= cooldown(next)) emitAlert(s, next, cfg);
+      continue;
+    }
+    if (RANK[next] > RANK[prev] && next !== "CALIBRATING") emitAlert(s, next, cfg);
+  }
+  maybeGlobalEvent();
+}
+
+function emitAlert(s, level, cfg) {
+  const m = s.metrics;
+  s.lastAlertAt = Date.now();
+  s.lastAlertLevel = level;
+  s.lastAlertTime = timeOfTs(s.last ? s.last.tsRaw : "");
+  const syncText = m.sameGroupActive >= 2 ? "，同组 " + m.sameGroupActive + " 只同步" : "";
+  const text = cfg.name + " " + cfg.symbol + " · 9秒 " + formatMoney(m.actual9) + " · 基线 " + formatMoney(m.expected9) + " · RVOL " + formatRvol(m.rvol9) + " · z=" + (Number.isFinite(m.z9) ? formatZ(m.z9) : "--") + syncText;
+  s.lastAlertText = text;
+  addLog(level, cfg.symbol, text);
+  if (level === "WATCH") return;
+  showBanner(level, level === "CRITICAL" ? "疑似多 ETF 同步护盘" : "疑似 ETF 异常放量", text);
+  beep(level === "CRITICAL" ? 3 : 2, level === "CRITICAL" ? 880 : 660);
+  if (level === "CRITICAL") notify("疑似国家队 ETF 护盘", text);
+}
+
+function maybeGlobalEvent() {
+  const active = ETF_CONFIG.map(c => state.get(c.symbol)).filter(s => s.state === "ALERT" || s.state === "CRITICAL");
+  const critical = active.some(s => s.state === "CRITICAL");
+  if (!(active.length >= 3 || critical)) {
+    globalEvent = null;
+    return;
+  }
+  const names = active.map(s => s.symbol).join("、");
+  const text = active.length + " 只 ETF 在 9 秒窗口内触发：" + names + "；跨 " + new Set(active.map(s => s.group)).size + " 个风格组。";
+  if (!globalEvent) {
+    globalEvent = { at: Date.now(), symbols: new Set(active.map(s => s.symbol)) };
+    addLog("EVENT", "ALL", text);
+    notify("疑似国家队 ETF 护盘事件", text);
+  } else {
+    active.forEach(s => globalEvent.symbols.add(s.symbol));
+  }
+  showBanner("EVENT", "全局事件：疑似多风格同步放量", text);
+}
+
+function showBanner(level, title, text) {
+  const el = document.getElementById("banner");
+  document.getElementById("bannerLevel").textContent = level;
+  document.getElementById("bannerTitle").textContent = title;
+  document.getElementById("bannerText").textContent = text;
+  el.className = "banner " + level.toLowerCase();
+  clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(() => el.classList.add("hidden"), level === "CRITICAL" || level === "EVENT" ? 30000 : 12000);
+}
+function hideBanner() {
+  clearTimeout(bannerTimer);
+  document.getElementById("banner").classList.add("hidden");
+}
+function addLog(level, symbol, text) {
+  alertLog.unshift({ id: ++logSeq, time: shanghaiParts().clock, level, symbol, text });
+  if (alertLog.length > 20) alertLog.length = 20;
+  renderLog();
+}
+function renderLog() {
+  const el = document.getElementById("eventLog");
+  if (!alertLog.length) {
+    el.innerHTML = '<div class="empty">暂无事件</div>';
+    return;
+  }
+  el.innerHTML = alertLog.map(a => {
+    const selectable = a.symbol !== "ALL" && ETF_BY_SYMBOL.has(a.symbol);
+    const attrs = selectable ? ' class="log-item clickable" data-symbol="' + escapeHtml(a.symbol) + '"' : ' class="log-item"';
+    return '<div' + attrs + '><span class="log-time">' + escapeHtml(a.time) + '</span><span class="badge ' + a.level.toLowerCase() + '">' + a.level + '</span><span class="log-symbol">' + escapeHtml(a.symbol) + '</span><span class="log-text">' + escapeHtml(a.text) + '</span></div>';
+  }).join("");
+}
+
+function setSourceState(kind, text) {
+  const el = document.getElementById("sourceStatus");
+  el.className = "pill " + kind;
+  el.textContent = text;
+}
+function renderSummary() {
+  const ready = [...state.values()].filter(s => s.metrics.ready);
+  const total = sum(ready.map(s => s.metrics.actual9));
+  const active = ETF_CONFIG.filter(cfg => {
+    const m = state.get(cfg.symbol).metrics;
+    return m.ready && m.actual9 >= cfg.floor9 && m.rvol9 >= settings.syncRvol;
+  });
+  const groups = new Set(active.map(c => c.group)).size;
+  const max = ready.length ? Math.max(...ready.map(s => s.metrics.rvol9)) : 0;
+  document.getElementById("statAmount").textContent = formatMoney(total);
+  document.getElementById("statTriggered").textContent = active.length + " 只";
+  document.getElementById("statGroups").textContent = groups + " 组";
+  document.getElementById("statMaxRvol").textContent = formatRvol(max);
+}
+function renderTable() {
+  const tbody = document.getElementById("etfRows");
+  tbody.innerHTML = ETF_CONFIG.map(cfg => {
+    const s = state.get(cfg.symbol);
+    const m = s.metrics;
+    const status = s.state;
+    const label = STATUS_LABEL[status] || status;
+    const price = s.last && s.last.price > 0 ? s.last.price.toFixed(3) : "--";
+    const pct = s.last ? formatPct(s.last.pct) : "--";
+    const pctCls = s.last ? (s.last.pct > 0 ? "pos" : s.last.pct < 0 ? "neg" : "dim") : "dim";
+    const lastAlert = s.lastAlertTime ? s.lastAlertLevel + " " + s.lastAlertTime : "--";
+    return '<tr data-symbol="' + cfg.symbol + '" class="' + (selectedSymbol === cfg.symbol ? "selected " : "") + "status-" + status.toLowerCase() + '" title="' + escapeHtml(s.lastAlertText || "") + '">' +
+      '<td class="symbol">' + cfg.symbol + '<div class="name">' + escapeHtml(cfg.name) + '</div></td>' +
+      '<td class="dim">' + cfg.group + '</td>' +
+      '<td class="num">' + price + '</td>' +
+      '<td class="num ' + pctCls + '">' + pct + '</td>' +
+      '<td class="num">' + (m.ready ? formatMoney(m.actual9) : "--") + '</td>' +
+      '<td class="num">' + (m.ready ? formatRvol(m.rvol9) : "--") + '</td>' +
+      '<td class="num dim">' + (m.ready ? formatRvol(m.rvol15) : "--") + '</td>' +
+      '<td class="num dim">' + (m.ready ? formatRvol(m.rvol30) : "--") + '</td>' +
+      '<td class="num dim">' + (m.ready && Number.isFinite(m.z9) ? formatZ(m.z9) : "--") + '</td>' +
+      '<td class="num dim">' + (m.ready ? m.sameGroupActive + "/" + m.styleGroupsActive : "--") + '</td>' +
+      '<td class="num">' + (m.ready ? formatScore(m.score) : "--") + '</td>' +
+      '<td><span class="status ' + status.toLowerCase() + '">' + label + '</span></td>' +
+      '<td class="dim">' + escapeHtml(lastAlert) + '</td>' +
+      '</tr>';
+  }).join("");
+  const lastUpdate = document.getElementById("lastUpdate");
+  lastUpdate.textContent = lastSourceOkAt ? "最后行情 " + lastDataTime + " · 延迟 " + Math.round(lastLatency) + "ms" : "等待数据";
+}
+function drawChart() {
+  const canvas = document.getElementById("chart");
+  const cfg = ETF_BY_SYMBOL.get(selectedSymbol);
+  const s = state.get(selectedSymbol);
+  document.getElementById("chartTitle").textContent = cfg ? cfg.name + " " + cfg.symbol : "选中标的";
+  if (!canvas || !s) return;
+  const dpr = window.devicePixelRatio || 1;
+  const w = Math.max(320, canvas.clientWidth || 800);
+  const h = 220;
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  const pad = { l: 58, r: 12, t: 14, b: 22 };
+  const plotW = w - pad.l - pad.r;
+  const plotH = h - pad.t - pad.b;
+  ctx.font = '11px -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif';
+  ctx.textBaseline = "middle";
+  const d = s.deltas;
+  const points = [];
+  for (let i = 0; i < d.length; i++) {
+    const w = amountWindow(d.slice(0, i + 1), 9);
+    points.push({ ts: d[i].ts, v: amountAtWindow(w, 9) });
+  }
+  const lastTs = points.length ? points[points.length - 1].ts.getTime() : 0;
+  const data = points.filter(p => p.ts.getTime() >= lastTs - DELTA_WINDOW_MS);
+  if (!data.length) {
+    ctx.fillStyle = "#6f8197";
+    ctx.textAlign = "center";
+    ctx.fillText("等待行情快照", w / 2, h / 2);
+    document.getElementById("chartMeta").textContent = "校准中";
+    return;
+  }
+  const values = data.map(p => p.v);
+  const maxV = Math.max(...values, s.metrics.expected9, cfg.floor9, 1) * 1.15;
+  ctx.textAlign = "right";
+  for (let i = 0; i <= 3; i++) {
+    const y = pad.t + plotH * i / 3;
+    ctx.strokeStyle = "rgba(139,155,176,.12)";
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    ctx.fillStyle = "#6f8197";
+    ctx.fillText(formatMoney(maxV * (1 - i / 3)), pad.l - 8, y);
+  }
+  const bw = plotW / data.length;
+  data.forEach((p, i) => {
+    const x = pad.l + i * bw + Math.max(1, bw * 0.12);
+    const barW = Math.max(1, bw * 0.76);
+    const bh = Math.max(1, Math.min(plotH, p.v / maxV * plotH));
+    ctx.fillStyle = p.v >= cfg.floor9 ? "rgba(255,92,92,.88)" : p.v >= s.metrics.expected9 * 3 ? "rgba(255,159,67,.78)" : "rgba(90,169,255,.62)";
+    ctx.fillRect(x, pad.t + plotH - bh, barW, bh);
+  });
+  const drawLine = (value, color) => {
+    if (!Number.isFinite(value) || value <= 0) return;
+    const y = pad.t + plotH - Math.min(1, value / maxV) * plotH;
+    ctx.save();
+    ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    ctx.restore();
+  };
+  drawLine(s.metrics.expected9, "rgba(90,169,255,.85)");
+  drawLine(cfg.floor9, "rgba(255,92,92,.70)");
+  const span = Math.max(0, Math.round((data[data.length - 1].ts - data[0].ts) / 1000));
+  document.getElementById("chartMeta").textContent = "最近 " + span + " 秒 · " + (s.metrics.ready ? "基线 " + formatMoney(s.metrics.expected9) : "校准中");
+}
+function render() { renderSummary(); renderTable(); drawChart(); }
+
+function updateClock() {
+  const p = shanghaiParts();
+  document.getElementById("clock").textContent = p.clock;
+  if (!running) return;
+  if (demo) { setSourceState("demo", "演示数据"); return; }
+  const phase = sessionPhase(p.hhmmss);
+  if (phase === "pre") { setSourceState("muted", "未开盘"); return; }
+  if (phase === "auction") { setSourceState("warn", "竞价中 · 仅展示"); return; }
+  if (phase === "lunch") { setSourceState("muted", "午休"); return; }
+  if (phase === "closed") { setSourceState("muted", "已收盘"); return; }
+  if (sourceFails >= 3) { setSourceState("error", "数据源异常"); return; }
+  if (document.hidden) { setSourceState("warn", "后台可能漏数据"); return; }
+  if (lastSourceOkAt && Date.now() - lastSourceOkAt > 10000) { setSourceState("warn", "数据延迟"); return; }
+  if (lastSourceOkAt) setSourceState("ok", "数据正常 " + Math.round(lastLatency) + "ms");
+}
+
+function schedule(started, interval) {
+  if (!running) return;
+  const delay = Math.max(0, interval - (Date.now() - started));
+  clearTimeout(pollTimer);
+  pollTimer = setTimeout(loop, delay);
+}
+async function loop() {
+  if (!running) return;
+  const started = Date.now();
+  if (demo) {
+    demoTick();
+    computeSignals();
+    evaluateAlerts();
+    render();
+    schedule(started, 3000);
+    return;
+  }
+  const phase = sessionPhase(shanghaiParts().hhmmss);
+  if (phase === "pre") { setSourceState("muted", "未开盘"); schedule(started, 10000); return; }
+  if (phase === "closed") { setSourceState("muted", "已收盘"); schedule(started, 30000); return; }
+  try {
+    const result = await fetchSnapshots();
+    const dateKey = result.snaps[0].tsRaw.slice(0, 8);
+    if (dateKey !== shanghaiParts().dateKey) throw new Error("非今日数据");
+    for (const snap of result.snaps) ingest(snap);
+    lastLatency = result.latency;
+    lastSourceOkAt = Date.now();
+    lastDataTime = timeOfTs(result.snaps[0].tsRaw);
+    sourceFails = 0;
+    if (phase === "auction") {
+      setSourceState("warn", "竞价中 · 仅展示");
+      render();
+      return;
+    }
+    setSourceState("ok", "数据正常 " + Math.round(lastLatency) + "ms");
+    computeSignals();
+    evaluateAlerts();
+    render();
+  } catch (err) {
+    sourceFails++;
+    setSourceState(sourceFails >= 3 ? "error" : "warn", sourceFails >= 3 ? "数据源异常" : "重试中");
+    render();
+  } finally {
+    schedule(started, phase === "continuous" ? 3000 : 10000);
+  }
+}
+
+function resetAll() {
+  initState();
+  alertLog = [];
+  logSeq = 0;
+  globalEvent = null;
+  sourceFails = 0;
+  lastSourceOkAt = 0;
+  lastLatency = 0;
+  lastDataTime = "";
+  renderLog();
+  hideBanner();
+  render();
+}
+function start() {
+  if (running) { stop(); return; }
+  demo = false;
+  running = true;
+  demoStep = 0;
+  resetAll();
+  requestNotify();
+  acquireWake();
+  const btn = document.getElementById("startBtn");
+  btn.textContent = "停止";
+  btn.classList.remove("primary");
+  btn.classList.add("danger");
+  document.getElementById("demoBtn").textContent = "演示";
+  setSourceState("warn", "启动中");
+  loop();
+}
+function stop() {
+  running = false;
+  demo = false;
+  clearTimeout(pollTimer);
+  pollTimer = null;
+  releaseWake();
+  const btn = document.getElementById("startBtn");
+  btn.textContent = "开始";
+  btn.classList.remove("danger");
+  btn.classList.add("primary");
+  document.getElementById("demoBtn").textContent = "演示";
+  setSourceState("muted", "已停止");
+}
+function seedDemo() {
+  const now = Date.now();
+  for (const cfg of ETF_CONFIG) {
+    const s = state.get(cfg.symbol);
+    const base = cfg.floor9 / 6;
+    s.deltas = Array.from({ length: 25 }, (_, i) => ({ ts: new Date(now - (25 - i) * 3000), dt: 3, dAmt: base * (0.8 + Math.random() * 0.4) }));
+    const total = sum(s.deltas.map(x => x.dAmt));
+    s.last = { symbol: cfg.symbol, ts: new Date(now - 3000), tsRaw: formatTs(new Date(now - 3000)), price: 4.1, prevClose: 4.1, pct: -0.5, cumVolLots: 100000, cumAmt: total };
+    s.sessionKey = "demo";
+    s.lastPhase = "continuous";
+    s.anchorDone = true;
+    s.state = "CALIBRATING";
+    s.metrics = emptyMetrics();
+  }
+}
+function demoTick() {
+  if (demoStep >= 20) demoStep = 0;
+  demoStep++;
+  const now = new Date();
+  for (const cfg of ETF_CONFIG) {
+    const s = state.get(cfg.symbol);
+    if (!s.last) continue;
+    let d = cfg.floor9 / 6 * (0.85 + Math.random() * 0.3);
+    if (demoStep >= 3 && demoStep <= 8 && cfg.group === "csi300") d = cfg.floor9 * 3;
+    if (demoStep >= 4 && demoStep <= 8 && (cfg.group === "sse50" || cfg.group === "star50")) d = cfg.floor9 * 3;
+    const snap = { ...s.last, ts: now, tsRaw: formatTs(now), cumVolLots: s.last.cumVolLots + 1000, cumAmt: s.last.cumAmt + d };
+    ingest(snap, true);
+  }
+}
+function startDemo() {
+  if (demo) { stop(); return; }
+  if (running) stop();
+  demo = true;
+  running = true;
+  demoStep = 0;
+  resetAll();
+  seedDemo();
+  const startBtn = document.getElementById("startBtn");
+  startBtn.textContent = "停止";
+  startBtn.classList.remove("primary");
+  startBtn.classList.add("danger");
+  document.getElementById("demoBtn").textContent = "退出演示";
+  setSourceState("demo", "演示数据");
+  computeSignals();
+  render();
+  loop();
+}
+
+function ensureAudio() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  try {
+    if (!audioCtx) audioCtx = new AC();
+    if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+    return audioCtx;
+  } catch { return null; }
+}
+function beep(count, freq) {
+  if (!settings.sound || !audioUnlocked) return;
+  const ac = ensureAudio();
+  if (!ac) return;
+  const t = ac.currentTime;
+  for (let i = 0; i < count; i++) {
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.type = "sine";
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t + i * 0.16);
+    g.gain.exponentialRampToValueAtTime(0.18, t + i * 0.16 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.16 + 0.12);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t + i * 0.16);
+    o.stop(t + i * 0.16 + 0.14);
+  }
+}
+function notify(title, text) {
+  if (!settings.notifications || !("Notification" in window) || Notification.permission !== "granted") return;
+  try { new Notification(title, { body: text }); } catch {}
+}
+function requestNotify() {
+  if (!settings.notifications || !("Notification" in window)) return;
+  if (Notification.permission === "default") {
+    Notification.requestPermission().then(p => {
+      if (p !== "granted") { settings.notifications = false; saveSettings(); }
+    }).catch(() => {});
+  }
+}
+async function acquireWake() {
+  if (!("wakeLock" in navigator) || document.hidden) return;
+  try {
+    wakeLock = await navigator.wakeLock.request("screen");
+    wakeLock.addEventListener("release", () => { wakeLock = null; });
+  } catch {}
+}
+function releaseWake() {
+  if (!wakeLock) return;
+  try { wakeLock.release(); } catch {}
+  wakeLock = null;
+}
+function fillSettings() {
+  document.getElementById("setWatch").value = settings.rvolWatch;
+  document.getElementById("setAlert").value = settings.rvolAlert;
+  document.getElementById("setCritical").value = settings.rvolCritical;
+  document.getElementById("setSync").value = settings.syncRvol;
+  document.getElementById("setSound").checked = !!settings.sound;
+  document.getElementById("setNotify").checked = !!settings.notifications;
+  document.getElementById("setAutoStart").checked = !!settings.autoStart;
+}
+function openSettings() { fillSettings(); document.getElementById("settingsModal").classList.remove("hidden"); }
+function closeSettings() { document.getElementById("settingsModal").classList.add("hidden"); }
+function applySettings() {
+  const num = (id, fallback) => { const v = Number(document.getElementById(id).value); return Number.isFinite(v) ? v : fallback; };
+  const watch = clamp(num("setWatch", settings.rvolWatch), 1, 20);
+  const alert = clamp(num("setAlert", settings.rvolAlert), watch + 0.1, 30);
+  const critical = clamp(num("setCritical", settings.rvolCritical), alert + 0.1, 50);
+  const sync = clamp(num("setSync", settings.syncRvol), 1, 10);
+  settings = {
+    rvolWatch: watch,
+    rvolAlert: alert,
+    rvolCritical: critical,
+    syncRvol: sync,
+    sound: document.getElementById("setSound").checked,
+    notifications: document.getElementById("setNotify").checked,
+    autoStart: document.getElementById("setAutoStart").checked
+  };
+  if (settings.notifications && "Notification" in window && Notification.permission === "denied") settings.notifications = false;
+  saveSettings();
+  closeSettings();
+  if (!running) render();
+}
+function resetSettings() {
+  settings = { ...DEFAULT_SETTINGS };
+  saveSettings();
+  fillSettings();
+  if (!running) render();
+}
+
+function bind() {
+  document.getElementById("startBtn").addEventListener("click", () => { ensureAudio(); audioUnlocked = true; requestNotify(); if (running) stop(); else start(); });
+  document.getElementById("demoBtn").addEventListener("click", () => { ensureAudio(); audioUnlocked = true; if (demo) stop(); else startDemo(); });
+  document.addEventListener("pointerdown", () => { if (settings.sound) { ensureAudio(); audioUnlocked = true; } }, { once: true });
+  document.getElementById("settingsBtn").addEventListener("click", openSettings);
+  document.getElementById("closeSettings").addEventListener("click", closeSettings);
+  document.getElementById("saveSettings").addEventListener("click", applySettings);
+  document.getElementById("resetSettings").addEventListener("click", resetSettings);
+  document.getElementById("bannerClose").addEventListener("click", hideBanner);
+  document.getElementById("clearLog").addEventListener("click", () => { alertLog = []; renderLog(); });
+  document.getElementById("settingsModal").addEventListener("click", e => { if (e.target.id === "settingsModal") closeSettings(); });
+  document.getElementById("etfRows").addEventListener("click", e => {
+    const tr = e.target.closest("tr[data-symbol]");
+    if (!tr) return;
+    selectedSymbol = tr.dataset.symbol;
+    render();
+  });
+  document.getElementById("eventLog").addEventListener("click", e => {
+    const item = e.target.closest(".log-item[data-symbol]");
+    if (!item) return;
+    selectedSymbol = item.dataset.symbol;
+    render();
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && running && !demo) acquireWake();
+  });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") { closeSettings(); hideBanner(); } });
+  window.addEventListener("resize", () => drawChart());
+}
+document.addEventListener("DOMContentLoaded", () => {
+  initState();
+  bind();
+  fillSettings();
+  render();
+  updateClock();
+  setInterval(updateClock, 1000);
+  const params = new URLSearchParams(location.search);
+  if (params.get("demo") === "1") setTimeout(() => startDemo(), 300);
+  else if (settings.autoStart) setTimeout(() => start(), 300);
+});
+</script>
+</body>
+</html>
